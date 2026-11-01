@@ -39,6 +39,8 @@ jobs:
         run: |
           # The zip holds the DbxToolbox folder, so unzipping into a Modules folder just works.
           Compress-Archive -Path ./DbxToolbox -DestinationPath "./DbxToolbox-$env:VERSION.zip"
+          # Same zip without the version, so releases/latest/download/DbxToolbox.zip never changes.
+          Copy-Item "./DbxToolbox-$env:VERSION.zip" ./DbxToolbox.zip
           $lines = Get-Content ./CHANGELOG.md
           # StartsWith, not -like: [ ] are wildcards to -like.
           $start = -1
@@ -52,4 +54,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release create $env:GITHUB_REF_NAME "./DbxToolbox-$env:VERSION.zip" --title "DbxToolbox $env:VERSION" --notes-file ./notes.md
+          gh release create $env:GITHUB_REF_NAME "./DbxToolbox-$env:VERSION.zip" ./DbxToolbox.zip --title "DbxToolbox $env:VERSION" --notes-file ./notes.md

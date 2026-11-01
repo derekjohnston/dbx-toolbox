@@ -11,8 +11,9 @@ Works in Windows PowerShell 5.1 and PowerShell 7+, on Windows, macOS and Linux.
 ## Install
 
 1. Install the Databricks CLI (0.200 or later) and sign in: `databricks auth login --host <workspace-url>`.
-2. Download the latest release zip from
-   [Releases](https://github.com/derekjohnston/dbx-toolbox/releases) and unzip its
+2. Download the latest release zip
+   ([`DbxToolbox.zip`](https://github.com/derekjohnston/dbx-toolbox/releases/latest/download/DbxToolbox.zip),
+   or a versioned one from [Releases](https://github.com/derekjohnston/dbx-toolbox/releases)) and unzip its
    `DbxToolbox` folder into a module folder, for example
    `Documents\PowerShell\Modules\DbxToolbox` (PowerShell 7) or
    `Documents\WindowsPowerShell\Modules\DbxToolbox` (5.1). It then loads itself.
