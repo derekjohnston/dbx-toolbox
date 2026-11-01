@@ -23,6 +23,8 @@ Works in Windows PowerShell 5.1 and PowerShell 7+, on Windows, macOS and Linux.
 
 ## Quick start
 
+See the [command reference](docs/commands.md) for every command and its parameters.
+
 ```powershell
 dbx-config -Profile <cli-profile> -Catalog <catalog> -Schema <schema> -Volume <volume>
 dbx-help                                   # every command, and which ones ask first
