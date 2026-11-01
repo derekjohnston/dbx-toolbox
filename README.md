@@ -48,7 +48,7 @@ before it asks.
 ```powershell
 Install-Module Pester -RequiredVersion 5.9.1 -Scope CurrentUser -Force -SkipPublisherCheck
 Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
-Invoke-Pester ./tests -Tag Unit
+Invoke-Pester ./tests -Tag Unit      # from pwsh -NonInteractive, as CI does
 Invoke-ScriptAnalyzer -Path ./DbxToolbox -Recurse
 ```
 

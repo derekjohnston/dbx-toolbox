@@ -19,7 +19,7 @@ pwsh -NoProfile -c 'Import-Module ./DbxToolbox -Force; dbx-help'
 
 ## Test and check
 ```bash
-pwsh -NoProfile -c 'Import-Module Pester -RequiredVersion 5.9.1; Invoke-Pester ./tests -Tag Unit -Output Detailed'
+pwsh -NoProfile -NonInteractive -c 'Import-Module Pester -RequiredVersion 5.9.1; Invoke-Pester ./tests -Tag Unit -Output Detailed'
 pwsh -NoProfile -c 'Invoke-ScriptAnalyzer -Path ./DbxToolbox -Recurse'
 ```
 Both must pass before a task counts as done. Unit tests never touch Databricks.
@@ -38,4 +38,4 @@ Both must pass before a task counts as done. Unit tests never touch Databricks.
 - Never put a workspace host, token, catalog name or employer name in code, tests, docs or commits.
 
 ## Status / known issues
-- 2026-11-01: split out of a single-file copy in another of my repositories (history starts here). Next: Pester unit tests (task 2), CI (task 3). Live Databricks tests deferred.
+- 2026-11-01: split out of a single-file copy in another of my repositories (history starts here). Pester unit tests in `tests/DbxToolbox.Tests.ps1` (fake `databricks` function, settings in TestDrive). Next: CI (task 3). Live Databricks tests deferred.
