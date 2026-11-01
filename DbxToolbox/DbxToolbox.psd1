@@ -69,15 +69,15 @@ PowerShellVersion = '5.1'
 # NestedModules = @()
 
 # Functions to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no functions to export.
-FunctionsToExport = 'Find-DbxTable', 'Get-DbxCatalogs', 'Get-DbxColumns', 'Get-DbxConfig', 
-               'Get-DbxCount', 'Get-DbxFile', 'Get-DbxFiles', 'Get-DbxFolderSize', 
-               'Get-DbxGrants', 'Get-DbxHead', 'Get-DbxHistory', 'Get-DbxJobs', 
-               'Get-DbxMe', 'Get-DbxProfiles', 'Get-DbxQueries', 'Get-DbxRuns', 
-               'Get-DbxSchemas', 'Get-DbxTableDetail', 'Get-DbxTables', 
-               'Get-DbxVolumes', 'Get-DbxWarehouses', 'Invoke-Dbx', 'Invoke-DbxSql', 
-               'Invoke-DbxSqlFile', 'New-DbxFolder', 'New-DbxSchema', 'New-DbxVolume', 
-               'Open-DbxExplorer', 'Remove-DbxFile', 'Remove-DbxSchema', 
-               'Send-DbxFile', 'Set-DbxConfig', 'Set-DbxDefault', 'Show-DbxHelp', 
+FunctionsToExport = 'Find-DbxTable', 'Get-DbxCatalogs', 'Get-DbxColumns', 'Get-DbxConfig',
+               'Get-DbxCount', 'Get-DbxFile', 'Get-DbxFiles', 'Get-DbxFolderSize',
+               'Get-DbxGrants', 'Get-DbxHead', 'Get-DbxHistory', 'Get-DbxJobs',
+               'Get-DbxMe', 'Get-DbxProfiles', 'Get-DbxQueries', 'Get-DbxRuns',
+               'Get-DbxSchemas', 'Get-DbxTableDetail', 'Get-DbxTables',
+               'Get-DbxVolumes', 'Get-DbxWarehouses', 'Invoke-Dbx', 'Invoke-DbxSql',
+               'Invoke-DbxSqlFile', 'New-DbxFolder', 'New-DbxSchema', 'New-DbxVolume',
+               'Open-DbxExplorer', 'Remove-DbxFile', 'Remove-DbxSchema',
+               'Send-DbxFile', 'Set-DbxConfig', 'Set-DbxDefault', 'Show-DbxHelp',
                'Start-DbxJob', 'Start-DbxWarehouse', 'Stop-DbxWarehouse'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
@@ -87,12 +87,12 @@ CmdletsToExport = @()
 # VariablesToExport = @()
 
 # Aliases to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no aliases to export.
-AliasesToExport = 'dbx', 'dbx-catalogs', 'dbx-cols', 'dbx-config', 'dbx-count', 'dbx-detail', 
-               'dbx-du', 'dbx-find', 'dbx-get', 'dbx-grants', 'dbx-head', 'dbx-help', 
-               'dbx-history', 'dbx-jobs', 'dbx-ls', 'dbx-me', 'dbx-mkdir', 'dbx-mkschema', 
-               'dbx-mkvolume', 'dbx-open', 'dbx-profiles', 'dbx-put', 'dbx-queries', 
-               'dbx-rm', 'dbx-rmschema', 'dbx-run', 'dbx-runs', 'dbx-schemas', 
-               'dbx-settings', 'dbx-sql', 'dbx-sqlfile', 'dbx-tables', 'dbx-use', 
+AliasesToExport = 'dbx', 'dbx-catalogs', 'dbx-cols', 'dbx-config', 'dbx-count', 'dbx-detail',
+               'dbx-du', 'dbx-find', 'dbx-get', 'dbx-grants', 'dbx-head', 'dbx-help',
+               'dbx-history', 'dbx-jobs', 'dbx-ls', 'dbx-me', 'dbx-mkdir', 'dbx-mkschema',
+               'dbx-mkvolume', 'dbx-open', 'dbx-profiles', 'dbx-put', 'dbx-queries',
+               'dbx-rm', 'dbx-rmschema', 'dbx-run', 'dbx-runs', 'dbx-schemas',
+               'dbx-settings', 'dbx-sql', 'dbx-sqlfile', 'dbx-tables', 'dbx-use',
                'dbx-volumes', 'dbx-warehouses', 'dbx-wh-start', 'dbx-wh-stop'
 
 # DSC resources to export from this module

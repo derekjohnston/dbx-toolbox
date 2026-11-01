@@ -1,5 +1,7 @@
 # DbxToolbox
 
+[![CI](https://github.com/derekjohnston/dbx-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/derekjohnston/dbx-toolbox/actions/workflows/ci.yml)
+
 Short `dbx-*` PowerShell commands for the [Databricks CLI](https://docs.databricks.com/dev-tools/cli/):
 browse Unity Catalog, run SQL and save the results, move files in volumes, start and stop
 warehouses, and look at jobs. Anything that changes something asks first.
@@ -9,8 +11,9 @@ Works in Windows PowerShell 5.1 and PowerShell 7+, on Windows, macOS and Linux.
 ## Install
 
 1. Install the Databricks CLI (0.200 or later) and sign in: `databricks auth login --host <workspace-url>`.
-2. Download the latest release zip from
-   [Releases](https://github.com/derekjohnston/dbx-toolbox/releases) and unzip its
+2. Download the latest release zip
+   ([`DbxToolbox.zip`](https://github.com/derekjohnston/dbx-toolbox/releases/latest/download/DbxToolbox.zip),
+   or a versioned one from [Releases](https://github.com/derekjohnston/dbx-toolbox/releases)) and unzip its
    `DbxToolbox` folder into a module folder, for example
    `Documents\PowerShell\Modules\DbxToolbox` (PowerShell 7) or
    `Documents\WindowsPowerShell\Modules\DbxToolbox` (5.1). It then loads itself.
@@ -19,6 +22,8 @@ Works in Windows PowerShell 5.1 and PowerShell 7+, on Windows, macOS and Linux.
    `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned`, then `Unblock-File` the files.
 
 ## Quick start
+
+See the [command reference](docs/commands.md) for every command and its parameters.
 
 ```powershell
 dbx-config -Profile <cli-profile> -Catalog <catalog> -Schema <schema> -Volume <volume>
@@ -48,11 +53,12 @@ before it asks.
 ```powershell
 Install-Module Pester -RequiredVersion 5.9.1 -Scope CurrentUser -Force -SkipPublisherCheck
 Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
-Invoke-Pester ./tests -Tag Unit
-Invoke-ScriptAnalyzer -Path ./DbxToolbox -Recurse
+Invoke-Pester ./tests -Tag Unit      # from pwsh -NonInteractive, as CI does
+Invoke-ScriptAnalyzer -Path ./DbxToolbox -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
 ```
 
-Unit tests never touch Databricks. See `AGENTS.md` for the project's rules and
+Unit tests never touch Databricks. CI runs them on Windows PowerShell 5.1 and
+PowerShell 7 (Windows and Linux) for every pull request. See `AGENTS.md` for the project's rules and
 `CHANGELOG.md` for what changed.
 
 ## Licence

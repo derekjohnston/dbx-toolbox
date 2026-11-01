@@ -1,0 +1,4 @@
+# Keep LF everywhere: docs/commands.md is compared byte for byte with the generator output,
+# and Git on Windows would otherwise check files out with CRLF.
+* text=auto eol=lf
+*.zip binary

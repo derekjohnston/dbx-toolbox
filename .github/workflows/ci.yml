@@ -1,0 +1,65 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: PSScriptAnalyzer
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
+          $findings = foreach ($path in './DbxToolbox', './scripts') {
+              Invoke-ScriptAnalyzer -Path $path -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
+          }
+          if ($findings) { $findings | Format-Table -AutoSize | Out-String -Width 200; exit 1 }
+          'No findings'
+
+  unit:
+    name: unit (${{ matrix.name }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Windows PowerShell 5.1
+            os: windows-latest
+            # -NonInteractive: tests check nothing changes when a question can't be asked.
+            shell: powershell -NoProfile -NonInteractive -ExecutionPolicy Bypass -Command ". '{0}'"
+          - name: PowerShell 7, Windows
+            os: windows-latest
+            shell: pwsh -NoProfile -NonInteractive -Command ". '{0}'"
+          - name: PowerShell 7, Linux
+            os: ubuntu-latest
+            shell: pwsh -NoProfile -NonInteractive -Command ". '{0}'"
+    defaults:
+      run:
+        shell: ${{ matrix.shell }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install Pester 5.9.1
+        run: |
+          [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
+          if ($PSVersionTable.PSEdition -eq 'Desktop') {
+              Install-PackageProvider NuGet -MinimumVersion 2.8.5.201 -Scope CurrentUser -Force | Out-Null
+          }
+          Install-Module Pester -RequiredVersion 5.9.1 -Scope CurrentUser -Force -SkipPublisherCheck -AllowClobber
+      - name: Unit tests
+        run: |
+          $PSVersionTable.PSVersion.ToString()
+          Import-Module Pester -RequiredVersion 5.9.1
+          $config = New-PesterConfiguration
+          $config.Run.Path = './tests'
+          $config.Run.Exit = $true
+          $config.Filter.Tag = 'Unit'
+          $config.Output.Verbosity = 'Detailed'
+          Invoke-Pester -Configuration $config
