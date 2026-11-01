@@ -1,5 +1,7 @@
 # DbxToolbox
 
+[![CI](https://github.com/derekjohnston/dbx-toolbox/actions/workflows/ci.yml/badge.svg)](https://github.com/derekjohnston/dbx-toolbox/actions/workflows/ci.yml)
+
 Short `dbx-*` PowerShell commands for the [Databricks CLI](https://docs.databricks.com/dev-tools/cli/):
 browse Unity Catalog, run SQL and save the results, move files in volumes, start and stop
 warehouses, and look at jobs. Anything that changes something asks first.
@@ -49,10 +51,11 @@ before it asks.
 Install-Module Pester -RequiredVersion 5.9.1 -Scope CurrentUser -Force -SkipPublisherCheck
 Install-Module PSScriptAnalyzer -Scope CurrentUser -Force
 Invoke-Pester ./tests -Tag Unit      # from pwsh -NonInteractive, as CI does
-Invoke-ScriptAnalyzer -Path ./DbxToolbox -Recurse
+Invoke-ScriptAnalyzer -Path ./DbxToolbox -Recurse -Settings ./PSScriptAnalyzerSettings.psd1
 ```
 
-Unit tests never touch Databricks. See `AGENTS.md` for the project's rules and
+Unit tests never touch Databricks. CI runs them on Windows PowerShell 5.1 and
+PowerShell 7 (Windows and Linux) for every pull request. See `AGENTS.md` for the project's rules and
 `CHANGELOG.md` for what changed.
 
 ## Licence

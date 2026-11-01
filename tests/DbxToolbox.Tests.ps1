@@ -141,6 +141,13 @@ Describe 'DbxToolbox' -Tag Unit {
             (dbx-settings)[0].Catalog | Should -Be 'other'
         }
 
+        It 'still takes -Profile (an alias: $Profile is built into PowerShell)' {
+            dbx-config -Profile other_profile | Out-Null
+            (Get-Content (Join-Path $TestDrive 'settings.json') -Raw | ConvertFrom-Json).Profile | Should -Be 'other_profile'
+            dbx-use -Profile third | Out-Null
+            InModuleScope DbxToolbox { $script:Cfg.Profile } | Should -Be 'third'
+        }
+
         It 'says when it uses saved defaults, and not when names are given' {
             (dbx-tables 6>&1 | Out-String) | Should -BeLike '*(using default catalog cat, schema sch)*'
             (dbx-tables -Catalog c2 -Schema s2 6>&1 | Out-String) | Should -Not -BeLike '*(using*'

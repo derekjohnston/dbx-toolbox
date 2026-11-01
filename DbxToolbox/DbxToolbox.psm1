@@ -82,7 +82,10 @@ function Resolve-DbxTable([string]$Name) {
 # Asks "Are you sure?" with No as the default, so a stray Enter changes nothing.
 # -WhatIf only describes the change; -Confirm:$false skips the question. If PowerShell
 # can't ask (a non-interactive run), the answer is no: a failed prompt never lets a change through.
-function Confirm-Dbx($Cmdlet, [string]$Target, [string]$Action) {
+function Confirm-Dbx {
+    # A helper: it asks on behalf of the calling command, using that command's -WhatIf/-Confirm.
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSShouldProcess', '', Justification = 'Calls ShouldProcess on the calling cmdlet')]
+    param($Cmdlet, [string]$Target, [string]$Action)
     $bound = $Cmdlet.MyInvocation.BoundParameters
     if ($bound.ContainsKey('WhatIf') -and $bound['WhatIf']) { return $Cmdlet.ShouldProcess($Target, $Action) }
     if ($bound.ContainsKey('Confirm') -and -not $bound['Confirm']) { return $true }
@@ -173,9 +176,12 @@ function Set-DbxConfig {
     .SYNOPSIS
     Save default profile, catalog, schema, warehouse, volume or volume path for every session
     #>
-    param([string]$Profile, [string]$Catalog, [string]$Schema, [string]$Warehouse, [string]$Volume, [string]$VolumePath)
-    foreach ($key in 'Profile', 'Catalog', 'Schema', 'Warehouse', 'Volume', 'VolumePath') {
-        if ($PSBoundParameters.ContainsKey($key)) { $script:Cfg[$key] = $PSBoundParameters[$key] }
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Changes only this module''s settings file, never Databricks')]
+    # -Profile is an alias: $Profile itself is a built-in PowerShell variable.
+    param([Alias('Profile')][string]$CliProfile, [string]$Catalog, [string]$Schema, [string]$Warehouse, [string]$Volume, [string]$VolumePath)
+    foreach ($key in 'CliProfile', 'Catalog', 'Schema', 'Warehouse', 'Volume', 'VolumePath') {
+        $setting = if ($key -eq 'CliProfile') { 'Profile' } else { $key }
+        if ($PSBoundParameters.ContainsKey($key)) { $script:Cfg[$setting] = $PSBoundParameters[$key] }
     }
     # Only this toolbox's own settings file changes, nothing in Databricks: no question asked.
     [IO.File]::WriteAllText($script:ConfigPath, ([pscustomobject]$script:Cfg | ConvertTo-Json))
@@ -187,11 +193,12 @@ function Set-DbxDefault {
     .SYNOPSIS
     Change catalog, schema or profile for this terminal only: dbx-use cat schema
     #>
-    param([string]$Catalog = $script:Cfg.Catalog, [string]$Schema = $script:Cfg.Schema, [string]$Profile = $script:Cfg.Profile)
+    [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '', Justification = 'Changes only this terminal''s settings, never Databricks')]
+    param([string]$Catalog = $script:Cfg.Catalog, [string]$Schema = $script:Cfg.Schema, [Alias('Profile')][string]$CliProfile = $script:Cfg.Profile)
     $script:Cfg.Catalog = $Catalog
     $script:Cfg.Schema = $Schema
-    $script:Cfg.Profile = $Profile
-    "Catalog: $Catalog  Schema: $Schema  Profile: $Profile  (this terminal only; dbx-config saves)"
+    $script:Cfg.Profile = $CliProfile
+    "Catalog: $Catalog  Schema: $Schema  Profile: $CliProfile  (this terminal only; dbx-config saves)"
 }
 
 function Get-DbxProfiles {
