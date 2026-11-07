@@ -4,13 +4,11 @@ All notable changes to DbxToolbox. Versions follow [semantic versioning](https:/
 
 ## [Unreleased]
 
-### Added
-- Generated command reference in `docs/commands.md`; regenerate with `scripts/Build-Docs.ps1`.
-
-## [0.1.0] - 2026-11-01
+## [0.1.0] - 2026-11-07
 First release as its own project (previously a single file inside another repository).
 
 ### Added
+- Generated command reference in `docs/commands.md`; regenerate with `scripts/Build-Docs.ps1`.
 - Module manifest (`DbxToolbox.psd1`): installs as a normal PowerShell module and loads itself.
 - `dbx-rmschema`: delete a schema and everything in it, after showing what it holds.
 - `-Comment` on `dbx-mkschema` and `dbx-mkvolume`.
