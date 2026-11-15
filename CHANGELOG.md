@@ -4,6 +4,8 @@ All notable changes to DbxToolbox. Versions follow [semantic versioning](https:/
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-11-15
+
 ### Added
 - Bundle commands (Databricks Asset Bundles), run in the folder holding databricks.yml:
   `dbx-bundle` (what a target holds: folder, jobs and Apps with links), `dbx-bundle-check`
