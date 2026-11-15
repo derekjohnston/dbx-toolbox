@@ -665,6 +665,112 @@ function Start-DbxJob {
     }
 }
 
+# ==== Bundles (Databricks Asset Bundles) ===================================================
+# Run these in the folder holding databricks.yml, as with the CLI. -Target picks a target
+# (left out: the bundle's default, usually dev); -Var sets bundle variables, e.g.
+# -Var @{ catalog = 'my_catalog' } (passed as --var catalog=my_catalog).
+
+function Get-DbxBundleArgs([string]$Target, [System.Collections.IDictionary]$Var) {
+    $a = @()
+    if ($Target) { $a += @('-t', $Target) }
+    if ($Var) { foreach ($k in @($Var.Keys | Sort-Object)) { $a += @('--var', "$k=$($Var[$k])") } }
+    $a + @('-p', $script:Cfg.Profile)
+}
+
+# The bundle as the target would deploy it (folder, run-as, resources); nothing if it's invalid
+# (the CLI has already printed why).
+function Get-DbxBundleConfig([string]$Target, [System.Collections.IDictionary]$Var) {
+    $cliArgs = Get-DbxBundleArgs $Target $Var
+    $json = & databricks bundle validate -o json @cliArgs
+    if ($LASTEXITCODE -ne 0 -or -not $json) { return }
+    ($json | Out-String) | ConvertFrom-Json
+}
+
+# One row per job, App, pipeline, ... in a bundle's resources.
+function Get-DbxBundleResources($Resources) {
+    if (-not $Resources) { return }
+    foreach ($type in $Resources.PSObject.Properties) {
+        foreach ($item in $type.Value.PSObject.Properties) {
+            $r = $item.Value
+            [pscustomobject]@{
+                type = $type.Name.TrimEnd('s')
+                key  = $item.Name
+                name = $r.name
+                url  = if ($r.PSObject.Properties.Name -contains 'url') { $r.url } else { $null }
+            }
+        }
+    }
+}
+
+# What a deploy would do, in plain words: where the files go, who jobs run as, what it makes.
+function Format-DbxBundlePlan($Config) {
+    $runAs = 'you (whoever deploys)'
+    if ($Config.run_as) {
+        if ($Config.run_as.service_principal_name) { $runAs = "service principal $($Config.run_as.service_principal_name)" }
+        elseif ($Config.run_as.user_name) { $runAs = $Config.run_as.user_name }
+    }
+    $lines = @(
+        "$($Config.bundle.name) to target $($Config.bundle.target) ($($Config.bundle.mode))",
+        "  folder:  $($Config.workspace.root_path)",
+        "  jobs run as: $runAs"
+    )
+    foreach ($r in @(Get-DbxBundleResources $Config.resources)) { $lines += "  $($r.type): $($r.name)" }
+    $lines -join "`n"
+}
+
+function Get-DbxBundle {
+    <#
+    .SYNOPSIS
+    What a bundle target holds: its folder, and each job/App with its link (-Target, -Var)
+    #>
+    param([string]$Target, [System.Collections.IDictionary]$Var)
+    $cliArgs = Get-DbxBundleArgs $Target $Var
+    $json = & databricks bundle summary -o json @cliArgs
+    if ($LASTEXITCODE -ne 0 -or -not $json) { return }
+    $s = ($json | Out-String) | ConvertFrom-Json
+    Write-Host "bundle $($s.bundle.name), target $($s.bundle.target), folder $($s.workspace.root_path)" -ForegroundColor DarkGray
+    Get-DbxBundleResources $s.resources
+}
+
+function Test-DbxBundle {
+    <#
+    .SYNOPSIS
+    Check databricks.yml and its settings for a target, changing nothing (-Target, -Var)
+    #>
+    param([string]$Target, [System.Collections.IDictionary]$Var)
+    $cliArgs = Get-DbxBundleArgs $Target $Var
+    & databricks bundle validate @cliArgs
+}
+
+function Publish-DbxBundle {
+    <#
+    .SYNOPSIS
+    Deploy a bundle (shows where it goes and what it makes, then asks): dbx-deploy -Target shared
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param([string]$Target, [System.Collections.IDictionary]$Var)
+    $config = Get-DbxBundleConfig $Target $Var
+    if (-not $config) { return }
+    if (Confirm-Dbx $PSCmdlet (Format-DbxBundlePlan $config) 'Deploy bundle') {
+        $cliArgs = Get-DbxBundleArgs $Target $Var
+        & databricks bundle deploy @cliArgs
+    }
+}
+
+function Start-DbxBundle {
+    <#
+    .SYNOPSIS
+    Run a bundle's job now, or deploy and start its App (asks first): dbx-bundle-run my_job
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param([Parameter(Mandatory)][string]$Key, [string]$Target, [System.Collections.IDictionary]$Var)
+    $where = if ($Target) { "target $Target" } else { 'default target' }
+    if (Confirm-Dbx $PSCmdlet "$Key ($where)" 'Run bundle resource') {
+        $cliArgs = Get-DbxBundleArgs $Target $Var
+        & databricks bundle run $Key @cliArgs
+    }
+}
+
 # ==== Help and short names =================================================================
 
 $script:Aliases = [ordered]@{
@@ -680,6 +786,8 @@ $script:Aliases = [ordered]@{
     'dbx-put' = 'Send-DbxFile'; 'dbx-mkdir' = 'New-DbxFolder'; 'dbx-rm' = 'Remove-DbxFile'
     'dbx-warehouses' = 'Get-DbxWarehouses'; 'dbx-wh-start' = 'Start-DbxWarehouse'; 'dbx-wh-stop' = 'Stop-DbxWarehouse'
     'dbx-jobs' = 'Get-DbxJobs'; 'dbx-runs' = 'Get-DbxRuns'; 'dbx-run' = 'Start-DbxJob'
+    'dbx-bundle' = 'Get-DbxBundle'; 'dbx-bundle-check' = 'Test-DbxBundle'; 'dbx-deploy' = 'Publish-DbxBundle'
+    'dbx-bundle-run' = 'Start-DbxBundle'
 }
 
 function Show-DbxHelp {

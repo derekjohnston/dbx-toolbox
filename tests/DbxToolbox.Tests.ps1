@@ -17,6 +17,13 @@ Describe 'DbxToolbox' -Tag Unit {
                 'tables list' { '[{"name":"my_table","table_type":"MANAGED","owner":"me"},{"name":"other","table_type":"MANAGED","owner":"me"}]' }
                 'warehouses list' { '[{"name":"wh","id":"wh1","state":"RUNNING","cluster_size":"2X-Small"}]' }
                 'api post' { '{"statement_id":"s1","status":{"state":"SUCCEEDED"},"manifest":{"schema":{"columns":[{"name":"n"}]}},"result":{"data_array":[["42"]]}}' }
+                'bundle validate' {
+                    if ($global:DbxBundleInvalid) { $global:LASTEXITCODE = 1; return }
+                    if ($args -contains 'json') {
+                        '{"bundle":{"name":"proj","target":"shared","mode":"production"},"workspace":{"root_path":"/Workspace/Shared/.bundle/proj"},"run_as":{"service_principal_name":"sp-1"},"resources":{"jobs":{"ingest":{"name":"ingest"}},"apps":{"web":{"name":"proj-web"}}}}'
+                    } else { 'Validation OK!' }
+                }
+                'bundle summary' { '{"bundle":{"name":"proj","target":"dev"},"workspace":{"root_path":"/Workspace/Users/me/.bundle/proj/dev"},"resources":{"jobs":{"ingest":{"name":"[dev me] ingest","url":"https://h/jobs/1"}}}}' }
                 default { '[]' }
             }
         }
@@ -85,9 +92,11 @@ Describe 'DbxToolbox' -Tag Unit {
                 dbx-rm folder -Recurse 3>&1 6>$null
                 dbx-mkschema x 3>&1 6>$null
                 dbx-rmschema old_schema 3>&1 6>$null
+                dbx-deploy -Target shared 3>&1 6>$null
+                dbx-bundle-run ingest 3>&1 6>$null
             ) | Where-Object { "$_" -like 'Not done*' }
-            $warnings.Count | Should -Be 4
-            $global:DbxCalls | Where-Object { $_ -match '^(api post|fs rm|schemas create|schemas delete)' } |
+            $warnings.Count | Should -Be 6
+            $global:DbxCalls | Where-Object { $_ -match '^(api post|fs rm|schemas create|schemas delete|bundle deploy|bundle run)' } |
                 Should -BeNullOrEmpty
         }
 
@@ -152,6 +161,51 @@ Describe 'DbxToolbox' -Tag Unit {
             (dbx-tables 6>&1 | Out-String) | Should -BeLike '*(using default catalog cat, schema sch)*'
             (dbx-tables -Catalog c2 -Schema s2 6>&1 | Out-String) | Should -Not -BeLike '*(using*'
             (dbx-tables -Catalog c2 6>&1 | Out-String) | Should -BeLike '*(using default schema sch)*'
+        }
+    }
+
+    Context 'Bundles' {
+        AfterEach { $global:DbxBundleInvalid = $false }
+
+        It 'dbx-deploy says where it goes, who jobs run as and what it makes, before asking' {
+            $plan = InModuleScope DbxToolbox { Format-DbxBundlePlan (Get-DbxBundleConfig 'shared' $null) }
+            $plan | Should -BeLike '*proj to target shared (production)*'
+            $plan | Should -BeLike '*folder:  /Workspace/Shared/.bundle/proj*'
+            $plan | Should -BeLike '*jobs run as: service principal sp-1*'
+            $plan | Should -BeLike '*job: ingest*'
+            $plan | Should -BeLike '*app: proj-web*'
+        }
+
+        It 'dbx-deploy deploys with the target, settings and profile when confirmed' {
+            dbx-deploy -Target shared -Var @{ catalog = 'c'; warehouse_id = 'w' } -Confirm:$false 6>$null
+            $global:DbxCalls | Where-Object { $_ -like 'bundle deploy*' } |
+                Should -Be 'bundle deploy -t shared --var catalog=c --var warehouse_id=w -p work'
+        }
+
+        It 'dbx-deploy changes nothing with -WhatIf, or when the bundle is invalid' {
+            dbx-deploy -Target shared -WhatIf 6>$null
+            $global:DbxBundleInvalid = $true
+            dbx-deploy -Confirm:$false 6>$null
+            $global:DbxCalls | Where-Object { $_ -like 'bundle deploy*' } | Should -BeNullOrEmpty
+        }
+
+        It 'dbx-bundle lists what a target holds, with links; default target when none given' {
+            $rows = @(dbx-bundle 6>$null)
+            $rows.Count | Should -Be 1
+            $rows[0].type | Should -Be 'job'
+            $rows[0].key | Should -Be 'ingest'
+            $rows[0].url | Should -Be 'https://h/jobs/1'
+            $global:DbxCalls | Should -Contain 'bundle summary -o json -p work'
+        }
+
+        It 'dbx-bundle-check validates without changing anything' {
+            dbx-bundle-check -Target shared | Should -Be 'Validation OK!'
+            $global:DbxCalls | Should -Be @('bundle validate -t shared -p work')
+        }
+
+        It 'dbx-bundle-run runs one resource of the target when confirmed' {
+            dbx-bundle-run ingest -Target shared -Confirm:$false 6>$null
+            $global:DbxCalls | Should -Contain 'bundle run ingest -t shared -p work'
         }
     }
 }
