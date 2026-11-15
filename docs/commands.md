@@ -41,4 +41,8 @@ the details of any command; commands marked "asks first" also take `-WhatIf` and
 | `dbx-jobs` | Get-DbxJobs | no | Jobs you can see; -Name filters (exact name, any case) | `-Name` |
 | `dbx-runs` | Get-DbxRuns | no | Recent job runs and how they ended; -JobId for one job | `-JobId`, `-Rows` |
 | `dbx-run` | Start-DbxJob | yes | Run a job now (asks first) | `-JobId` |
+| `dbx-bundle` | Get-DbxBundle | no | What a bundle target holds: its folder, and each job/App with its link (-Target, -Var) | `-Target`, `-Var` |
+| `dbx-bundle-check` | Test-DbxBundle | no | Check databricks.yml and its settings for a target, changing nothing (-Target, -Var) | `-Target`, `-Var` |
+| `dbx-deploy` | Publish-DbxBundle | yes | Deploy a bundle (shows where it goes and what it makes, then asks): dbx-deploy -Target shared | `-Target`, `-Var` |
+| `dbx-bundle-run` | Start-DbxBundle | yes | Run a bundle's job now, or deploy and start its App (asks first): dbx-bundle-run my_job | `-Key`, `-Target`, `-Var` |
 | `dbx-help` | Show-DbxHelp | no | This list. Get-Help <command> -Full shows the details of one |  |
