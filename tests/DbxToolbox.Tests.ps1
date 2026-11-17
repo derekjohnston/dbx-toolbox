@@ -23,6 +23,9 @@ Describe 'DbxToolbox' -Tag Unit {
                         '{"bundle":{"name":"proj","target":"shared","mode":"production"},"workspace":{"root_path":"/Workspace/Shared/.bundle/proj"},"run_as":{"service_principal_name":"sp-1"},"resources":{"jobs":{"ingest":{"name":"ingest"}},"apps":{"web":{"name":"proj-web"}}}}'
                     } else { 'Validation OK!' }
                 }
+                'secrets list-scopes' { '[{"name":"team","backend_type":"DATABRICKS"}]' }
+                'secrets list-secrets' { '[{"key":"api-token","last_updated_timestamp":1763380800000}]' }
+                'secrets list-acls' { '[{"principal":"users","permission":"READ"}]' }
                 'bundle summary' { '{"bundle":{"name":"proj","target":"dev"},"workspace":{"root_path":"/Workspace/Users/me/.bundle/proj/dev"},"resources":{"jobs":{"ingest":{"name":"[dev me] ingest","url":"https://h/jobs/1"}}}}' }
                 default { '[]' }
             }
@@ -94,9 +97,12 @@ Describe 'DbxToolbox' -Tag Unit {
                 dbx-rmschema old_schema 3>&1 6>$null
                 dbx-deploy -Target shared 3>&1 6>$null
                 dbx-bundle-run ingest 3>&1 6>$null
+                dbx-mkscope team 3>&1 6>$null
+                dbx-secret-set team api-token 3>&1 6>$null
+                dbx-secret-grant team users 3>&1 6>$null
             ) | Where-Object { "$_" -like 'Not done*' }
-            $warnings.Count | Should -Be 6
-            $global:DbxCalls | Where-Object { $_ -match '^(api post|fs rm|schemas create|schemas delete|bundle deploy|bundle run)' } |
+            $warnings.Count | Should -Be 9
+            $global:DbxCalls | Where-Object { $_ -match '^(api post|fs rm|schemas create|schemas delete|bundle deploy|bundle run|secrets create-scope|secrets put-acl)' } |
                 Should -BeNullOrEmpty
         }
 
@@ -206,6 +212,34 @@ Describe 'DbxToolbox' -Tag Unit {
         It 'dbx-bundle-run runs one resource of the target when confirmed' {
             dbx-bundle-run ingest -Target shared -Confirm:$false 6>$null
             $global:DbxCalls | Should -Contain 'bundle run ingest -t shared -p work'
+        }
+    }
+
+    Context 'Secrets' {
+        It 'lists scopes, key names and access, never values' {
+            (dbx-secret-scopes).scope | Should -Be 'team'
+            $secret = dbx-secrets team
+            $secret.key | Should -Be 'api-token'
+            $secret.PSObject.Properties.Name | Should -Not -Contain 'value'
+            (dbx-secret-access team).permission | Should -Be 'READ'
+            $global:DbxCalls | Should -Contain 'secrets list-secrets team -o json -p work'
+        }
+
+        It 'sends the value on standard input, never on the command line' {
+            Mock -ModuleName DbxToolbox Invoke-DbxCliStdin { 0 }
+            $value = ConvertTo-SecureString 's3cr3t' -AsPlainText -Force
+            dbx-secret-set team api-token -Value $value -Confirm:$false | Should -BeLike 'Set team/api-token*'
+            Should -Invoke -ModuleName DbxToolbox Invoke-DbxCliStdin -Times 1 -ParameterFilter {
+                ($CliArgs -join ' ') -eq 'secrets put-secret team api-token -p work' -and $InputText -eq 's3cr3t'
+            }
+            $global:DbxCalls | Where-Object { $_ -like '*s3cr3t*' } | Should -BeNullOrEmpty
+        }
+
+        It 'creates a scope and grants access only after asking' {
+            dbx-mkscope team -ManagePrincipal users -Confirm:$false | Out-Null
+            dbx-secret-grant team sp-1 -Permission READ -Confirm:$false | Out-Null
+            $global:DbxCalls | Should -Contain 'secrets create-scope team --initial-manage-principal users -o json -p work'
+            $global:DbxCalls | Should -Contain 'secrets put-acl team sp-1 READ -o json -p work'
         }
     }
 }

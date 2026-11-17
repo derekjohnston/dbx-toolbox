@@ -665,6 +665,114 @@ function Start-DbxJob {
     }
 }
 
+# ==== Secrets =================================================================================
+# Values never pass through the command line, the screen or history: dbx-secret-set asks for
+# the value with hidden input and hands it to the CLI on standard input. Nothing here prints a
+# value; Databricks only gives values to code running in a job or notebook.
+
+# Run the real CLI with some text on its standard input (no trailing newline, so the value is
+# stored exactly). Returns the exit code; the CLI's errors are shown as warnings.
+function Invoke-DbxCliStdin([string[]]$CliArgs, [string]$InputText) {
+    $exe = (Get-Command databricks -CommandType Application -ErrorAction Stop | Select-Object -First 1).Source
+    $info = New-Object System.Diagnostics.ProcessStartInfo
+    $info.FileName = $exe
+    $info.Arguments = ($CliArgs | ForEach-Object { if ($_ -match '\s') { '"' + $_ + '"' } else { $_ } }) -join ' '
+    $info.UseShellExecute = $false
+    $info.RedirectStandardInput = $true
+    $info.RedirectStandardError = $true
+    $info.RedirectStandardOutput = $true
+    $process = [System.Diagnostics.Process]::Start($info)
+    $process.StandardInput.Write($InputText)
+    $process.StandardInput.Close()
+    $process.StandardOutput.ReadToEnd() | Out-Null
+    $err = $process.StandardError.ReadToEnd()
+    $process.WaitForExit()
+    if ($process.ExitCode -ne 0 -and $err) { Write-Warning $err.Trim() }
+    $process.ExitCode
+}
+
+function Get-DbxSecretScopes {
+    <#
+    .SYNOPSIS
+    Secret scopes you can see, and what keeps them (Databricks or Azure Key Vault)
+    #>
+    Invoke-DbxCli @('secrets', 'list-scopes') | ForEach-Object {
+        [pscustomobject]@{ scope = $_.name; backend = $_.backend_type }
+    }
+}
+
+function Get-DbxSecrets {
+    <#
+    .SYNOPSIS
+    The key names in a secret scope and when each was last set; never the values
+    #>
+    param([Parameter(Mandatory)][string]$Scope)
+    Invoke-DbxCli @('secrets', 'list-secrets', $Scope) | ForEach-Object {
+        [pscustomobject]@{ key = $_.key; last_set = ConvertFrom-DbxMs $_.last_updated_timestamp }
+    }
+}
+
+function New-DbxSecretScope {
+    <#
+    .SYNOPSIS
+    Create a secret scope (asks first); -ManagePrincipal names who may manage it (e.g. users)
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param([Parameter(Mandatory)][string]$Scope, [string]$ManagePrincipal)
+    if (Confirm-Dbx $PSCmdlet "secret scope $Scope" 'Create') {
+        $cli = @('secrets', 'create-scope', $Scope)
+        if ($ManagePrincipal) { $cli += @('--initial-manage-principal', $ManagePrincipal) }
+        Invoke-DbxCli $cli | Out-Null
+        if ($LASTEXITCODE -eq 0) { "Created secret scope $Scope" }
+    }
+}
+
+function Set-DbxSecret {
+    <#
+    .SYNOPSIS
+    Store a secret (asks first, then asks for the value with hidden input); replaces an existing one
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param([Parameter(Mandatory)][string]$Scope, [Parameter(Mandatory)][string]$Key, [securestring]$Value)
+    if (-not (Confirm-Dbx $PSCmdlet "secret $Scope/$Key" 'Set (replaces any existing value)')) { return }
+    if (-not $Value) { $Value = Read-Host "Value for $Scope/$Key (hidden)" -AsSecureString }
+    $ptr = [Runtime.InteropServices.Marshal]::SecureStringToBSTR($Value)
+    try { $plain = [Runtime.InteropServices.Marshal]::PtrToStringBSTR($ptr) }
+    finally { [Runtime.InteropServices.Marshal]::ZeroFreeBSTR($ptr) }
+    if (-not $plain) { Write-Warning 'Not done: the value was empty'; return }
+    $code = Invoke-DbxCliStdin @('secrets', 'put-secret', $Scope, $Key, '-p', $script:Cfg.Profile) $plain
+    $plain = $null
+    if ($code -eq 0) { "Set $Scope/$Key (the value is not shown)" }
+}
+
+function Get-DbxSecretAccess {
+    <#
+    .SYNOPSIS
+    Who can read, write or manage a secret scope
+    #>
+    param([Parameter(Mandatory)][string]$Scope)
+    Invoke-DbxCli @('secrets', 'list-acls', $Scope) | ForEach-Object {
+        [pscustomobject]@{ principal = $_.principal; permission = $_.permission }
+    }
+}
+
+function Grant-DbxSecretAccess {
+    <#
+    .SYNOPSIS
+    Give a user, group or service principal READ, WRITE or MANAGE on a secret scope (asks first)
+    #>
+    [CmdletBinding(SupportsShouldProcess, ConfirmImpact = 'High')]
+    param(
+        [Parameter(Mandatory)][string]$Scope,
+        [Parameter(Mandatory)][string]$Principal,
+        [ValidateSet('READ', 'WRITE', 'MANAGE')][string]$Permission = 'READ'
+    )
+    if (Confirm-Dbx $PSCmdlet "$Principal on secret scope $Scope" "Grant $Permission") {
+        Invoke-DbxCli @('secrets', 'put-acl', $Scope, $Principal, $Permission) | Out-Null
+        if ($LASTEXITCODE -eq 0) { "Granted $Permission on $Scope to $Principal" }
+    }
+}
+
 # ==== Bundles (Databricks Asset Bundles) ===================================================
 # Run these in the folder holding databricks.yml, as with the CLI. -Target picks a target
 # (left out: the bundle's default, usually dev); -Var sets bundle variables, e.g.
@@ -788,6 +896,8 @@ $script:Aliases = [ordered]@{
     'dbx-jobs' = 'Get-DbxJobs'; 'dbx-runs' = 'Get-DbxRuns'; 'dbx-run' = 'Start-DbxJob'
     'dbx-bundle' = 'Get-DbxBundle'; 'dbx-bundle-check' = 'Test-DbxBundle'; 'dbx-deploy' = 'Publish-DbxBundle'
     'dbx-bundle-run' = 'Start-DbxBundle'
+    'dbx-secret-scopes' = 'Get-DbxSecretScopes'; 'dbx-secrets' = 'Get-DbxSecrets'; 'dbx-mkscope' = 'New-DbxSecretScope'
+    'dbx-secret-set' = 'Set-DbxSecret'; 'dbx-secret-access' = 'Get-DbxSecretAccess'; 'dbx-secret-grant' = 'Grant-DbxSecretAccess'
 }
 
 function Show-DbxHelp {

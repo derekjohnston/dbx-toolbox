@@ -4,6 +4,14 @@ All notable changes to DbxToolbox. Versions follow [semantic versioning](https:/
 
 ## [Unreleased]
 
+### Added
+- Secret commands: `dbx-secret-scopes` (scopes and their backend), `dbx-secrets <scope>`
+  (key names and when set, never values), `dbx-secret-access <scope>` (who can read, write
+  or manage), and, asking first, `dbx-mkscope <scope>`, `dbx-secret-set <scope> <key>` and
+  `dbx-secret-grant <scope> <principal> -Permission READ|WRITE|MANAGE`. `dbx-secret-set`
+  asks for the value with hidden input and passes it to the CLI on standard input, so it
+  never appears on the command line, on screen or in history.
+
 ## [0.2.0] - 2026-11-15
 
 ### Added

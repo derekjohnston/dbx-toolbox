@@ -79,7 +79,8 @@ FunctionsToExport = 'Find-DbxTable', 'Get-DbxBundle', 'Get-DbxCatalogs', 'Get-Db
                'Open-DbxExplorer', 'Publish-DbxBundle', 'Remove-DbxFile', 'Remove-DbxSchema',
                'Send-DbxFile', 'Set-DbxConfig', 'Set-DbxDefault', 'Show-DbxHelp',
                'Start-DbxBundle', 'Start-DbxJob', 'Start-DbxWarehouse', 'Stop-DbxWarehouse',
-               'Test-DbxBundle'
+               'Test-DbxBundle', 'Get-DbxSecretScopes', 'Get-DbxSecrets', 'New-DbxSecretScope',
+               'Set-DbxSecret', 'Get-DbxSecretAccess', 'Grant-DbxSecretAccess'
 
 # Cmdlets to export from this module, for best performance, do not use wildcards and do not delete the entry, use an empty array if there are no cmdlets to export.
 CmdletsToExport = @()
@@ -94,7 +95,9 @@ AliasesToExport = 'dbx', 'dbx-bundle', 'dbx-bundle-check', 'dbx-bundle-run', 'db
                'dbx-mkvolume', 'dbx-open', 'dbx-profiles', 'dbx-put', 'dbx-queries',
                'dbx-rm', 'dbx-rmschema', 'dbx-run', 'dbx-runs', 'dbx-schemas',
                'dbx-settings', 'dbx-sql', 'dbx-sqlfile', 'dbx-tables', 'dbx-use',
-               'dbx-volumes', 'dbx-warehouses', 'dbx-wh-start', 'dbx-wh-stop'
+               'dbx-volumes', 'dbx-warehouses', 'dbx-wh-start', 'dbx-wh-stop',
+               'dbx-secret-scopes', 'dbx-secrets', 'dbx-mkscope', 'dbx-secret-set',
+               'dbx-secret-access', 'dbx-secret-grant'
 
 # DSC resources to export from this module
 # DscResourcesToExport = @()
