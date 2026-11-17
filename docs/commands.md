@@ -45,4 +45,10 @@ the details of any command; commands marked "asks first" also take `-WhatIf` and
 | `dbx-bundle-check` | Test-DbxBundle | no | Check databricks.yml and its settings for a target, changing nothing (-Target, -Var) | `-Target`, `-Var` |
 | `dbx-deploy` | Publish-DbxBundle | yes | Deploy a bundle (shows where it goes and what it makes, then asks): dbx-deploy -Target shared | `-Target`, `-Var` |
 | `dbx-bundle-run` | Start-DbxBundle | yes | Run a bundle's job now, or deploy and start its App (asks first): dbx-bundle-run my_job | `-Key`, `-Target`, `-Var` |
+| `dbx-secret-scopes` | Get-DbxSecretScopes | no | Secret scopes you can see, and what keeps them (Databricks or Azure Key Vault) |  |
+| `dbx-secrets` | Get-DbxSecrets | no | The key names in a secret scope and when each was last set; never the values | `-Scope` |
+| `dbx-mkscope` | New-DbxSecretScope | yes | Create a secret scope (asks first); -ManagePrincipal names who may manage it (e.g. users) | `-ManagePrincipal`, `-Scope` |
+| `dbx-secret-set` | Set-DbxSecret | yes | Store a secret (asks first, then asks for the value with hidden input); replaces an existing one | `-Key`, `-Scope`, `-Value` |
+| `dbx-secret-access` | Get-DbxSecretAccess | no | Who can read, write or manage a secret scope | `-Scope` |
+| `dbx-secret-grant` | Grant-DbxSecretAccess | yes | Give a user, group or service principal READ, WRITE or MANAGE on a secret scope (asks first) | `-Permission`, `-Principal`, `-Scope` |
 | `dbx-help` | Show-DbxHelp | no | This list. Get-Help <command> -Full shows the details of one |  |
